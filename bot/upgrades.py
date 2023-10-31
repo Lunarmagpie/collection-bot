@@ -1,4 +1,5 @@
 import math
+import typing as t
 from enum import Enum, auto
 
 
@@ -16,68 +17,70 @@ class Upgrades(Enum):
     UPGRADE_9 = auto()
 
 
-class RollGenerationRate:
-    def modifier(self, level) -> int:
-        return 900 - level * 60
-
-    def formatted_modifier(self, level) -> str:
-        minutes = int((self.modifier(level) / 60) % 60)
-        return f"{minutes} minutes"
+UpgradeFunctions = t.Tuple[t.Callable[[float], float], t.Callable[[float], str]]
 
 
-class RollMaximum:
-    def modifier(self, level) -> int:
-        return 20 + level * 3
-
-    def formatted_modifier(self, level) -> str:
-        return f"{self.modifier(level)} rolls"
+def roll_generation_rate_modifier(level) -> int:
+    return 900 - level * 60
 
 
-class DailyBonus:
-    def modifier(self, level) -> int:
-        return 5 + level
-
-    def formatted_modifier(self, level) -> str:
-        return f"{self.modifier(level)}"
+def roll_generation_rate_formatted_modifier(level) -> str:
+    minutes = int((roll_generation_rate_modifier(level) / 60) % 60)
+    return f"{minutes} minutes"
 
 
-class FragmentBonus:
-    def modifier(self, level) -> float:
-        return 1 + level * 0.2
-
-    def formatted_modifier(self, level) -> str:
-        return f"{self.modifier(level)}x"
+def roll_maximum_modifier(level) -> int:
+    return 20 + level * 3
 
 
-class WishlistSize:
-    def modifier(self, level) -> int:
-        return 7 + level
-
-    def formatted_modifier(self, level) -> str:
-        return f"{self.modifier(level)} slots"
+def roll_maximum_formatted_modifier(level) -> str:
+    return f"{roll_maximum_modifier(level)} rolls"
 
 
-class WishlistRateBonus:
+def daily_bonus_modifier(level) -> int:
+    return 5 + level
 
-    def modifier_as_int(self, level) -> int:
-        return int((math.log(level+1, 1.62) / 2387) * 10000 + 0.5)
 
-    def modifier(self, level) -> float:
-        return self.modifier_as_int(level) / 10000
+def daily_bonus_formatted_modifier(level) -> str:
+    return f"{daily_bonus_modifier(level)}"
 
-    def formatted_modifier(self, level) -> str:
-        if level != 0:
-            # return f"{self.modifier_as_int(level) / 100}".ljust(5, "0") + "%"
-            return f"1 in {int(10000 / self.modifier_as_int(level))} rolls"
-        return "1 in 20000 rolls"
+
+def fragment_bonus_modifier(level) -> float:
+    return 1 + level * 0.2
+
+
+def fragment_bonus_formatted_modifier(level) -> str:
+    return f"{fragment_bonus_modifier(level)}x"
+
+
+def wishlist_size_modifier(level) -> int:
+    return 7 + level
+
+
+def wishlist_size_formatted_modifier(level) -> str:
+    return f"{wishlist_size_modifier(level)} slots"
+
+
+def modifier_as_int(level) -> int:
+    return int((math.log(level + 1, 1.62) / 2387) * 10000 + 0.5)
+
+
+def wishlist_rate_bonus_modifier(level) -> float:
+    return modifier_as_int(level) / 10000
+
+
+def wishlist_rate_bonus_formatted_modifier(level) -> str:
+    if level != 0:
+        return f"1 in {int(10000 / modifier_as_int(level))} rolls"
+    return "1 in 20000 rolls"
 
 
 class UpgradeEffects:
-    upgrades: dict[Upgrades, RollGenerationRate | RollMaximum | DailyBonus | FragmentBonus | WishlistSize | WishlistRateBonus] = {
-        Upgrades.ROLL_REGEN: RollGenerationRate(),
-        Upgrades.ROLL_MAX: RollMaximum(),
-        Upgrades.DAILY_BONUS: DailyBonus(),
-        Upgrades.FRAGMENT_BONUS: FragmentBonus(),
-        Upgrades.WISHLIST_SIZE: WishlistSize(),
-        Upgrades.WISHLIST_RATE_BONUS: WishlistRateBonus(),
+    upgrades: dict[Upgrades, UpgradeFunctions] = {
+        Upgrades.ROLL_REGEN: (roll_generation_rate_modifier, roll_generation_rate_formatted_modifier),
+        Upgrades.ROLL_MAX: (roll_maximum_modifier, roll_maximum_formatted_modifier),
+        Upgrades.DAILY_BONUS: (daily_bonus_modifier, daily_bonus_formatted_modifier),
+        Upgrades.FRAGMENT_BONUS: (fragment_bonus_modifier, fragment_bonus_formatted_modifier),
+        Upgrades.WISHLIST_SIZE: (wishlist_size_modifier, wishlist_size_formatted_modifier),
+        Upgrades.WISHLIST_RATE_BONUS: (wishlist_rate_bonus_modifier, wishlist_rate_bonus_formatted_modifier),
     }
